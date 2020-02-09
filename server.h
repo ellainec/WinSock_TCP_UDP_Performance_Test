@@ -1,21 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
-#include <winsock2.h>
-#include <windows.h>
-#include <stdio.h>
+#include "Definitions.h"
 #include <QPlainTextEdit>
-
-#define PORT 6150
-#define DATA_BUFSIZE 8192
-
-typedef struct _SOCKET_INFORMATION {
-   OVERLAPPED Overlapped;
-   SOCKET Socket;
-   CHAR Buffer[DATA_BUFSIZE];
-   WSABUF DataBuf;
-   DWORD BytesSEND;
-   DWORD BytesRECV;
-} SOCKET_INFORMATION, * LPSOCKET_INFORMATION;
 
 class Server
 {
@@ -34,7 +20,7 @@ protected:
     bool bindSocket();
     bool createThread();
     bool setUp();
-
+    static void printToFile(std::string);
 public:
     Server() {};
     virtual ~Server() {

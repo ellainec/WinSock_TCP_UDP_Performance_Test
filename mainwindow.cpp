@@ -27,18 +27,17 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    HANDLE ThreadHandle;
-    DWORD ThreadId;
-    if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, NULL, 0, &ThreadId)) == NULL)
-    {
-       printf("CreateThread failed with error %d\n", GetLastError());
-       return;
-    }
 }
 
 DWORD WINAPI MainWindow::ServerThread(LPVOID lpParameter) {
     Server* server = new TCPServer();
     server->start();
+    return true;
+}
+
+DWORD WINAPI MainWindow::ClientThread(LPVOID lpParameter) {
+    Client* client = new Client();
+    client->start();
     return true;
 }
 
@@ -93,3 +92,22 @@ void MainWindow::on_action_Receive_As_Server_triggered()
     ui->clientBox->setVisible(false);
     //ui->serverBox->setVisible(true);
 }
+
+void MainWindow::on_serverStartBtn_clicked()
+{
+    if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, NULL, 0, &ThreadId)) == NULL)
+    {
+        printf("CreateThread failed with error %d\n", GetLastError());
+        return;
+    }
+}
+
+void MainWindow::on_clientStartBtn_clicked()
+{
+    if ((ThreadHandle = CreateThread(NULL, 0, ClientThread, NULL, 0, &ThreadId)) == NULL)
+    {
+        printf("CreateThread failed with error %d\n", GetLastError());
+        return;
+    }
+}
+

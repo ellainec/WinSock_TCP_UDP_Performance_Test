@@ -1,123 +1,204 @@
-/*---------------------------------------------------------------------------------------
---	SOURCE FILE:		tcp_clnt.c - A simple TCP client program.
---
---	PROGRAM:			tclnt.exe
---
---	FUNCTIONS:			Winsock 2 API
---
---	DATE:				January 11, 2006
---
---	REVISIONS:			(Date and Description)
---
---						Oct. 1, 2007 (A. Abdulla):
---
---						Changed the read loop to better handle the
---						blocking recv call.
---
---	DESIGNERS:			Aman Abdulla
---
---	PROGRAMMERS:		Aman Abdulla
---
---	NOTES:
---	The program will establish a TCP connection to a user specifed server.
---  The server can be specified using a fully qualified domain name or and
---	IP address. After the connection has been established the user will be
---  prompted for date. The date string is then sent to the server and the
---  response (echo) back from the server is displayed.
----------------------------------------------------------------------------------------*/
-#include <stdio.h>
-#include <winsock2.h>
-#include <errno.h>
-//#include <string.h>
-//#include <memory.h>
+#include "client.h"
 
-#define SERVER_TCP_PORT			7000	// Default port
-#define BUFSIZE					255		// Buffer length
-
-int main (int argc, char **argv)
+Client::Client()
 {
-    int n, ns, bytes_to_read;
-    int port, err;
-    SOCKET sd;
-    struct hostent	*hp;
-    struct sockaddr_in server;
-    char  *host, *bp, rbuf[BUFSIZE], sbuf[BUFSIZE], **pptr;
-    WSADATA WSAData;
-    WORD wVersionRequested;
 
-    switch(argc)
-    {
-        case 2:
-            host =	argv[1];	// Host name
-            port =	SERVER_TCP_PORT;
-        break;
-        case 3:
-            host =	argv[1];
-            port =	atoi(argv[2]);	// User specified port
-        break;
-        default:
-            fprintf(stderr, "Usage: %s host [port]\n", argv[0]);
-            exit(1);
-    }
-
-    wVersionRequested = MAKEWORD( 2, 2 );
-    err = WSAStartup( wVersionRequested, &WSAData );
-    if ( err != 0 ) //No usable DLL
-    {
-        printf ("DLL not found!\n");
-        exit(1);
-    }
-
-    // Create the socket
-    if ((sd = socket(AF_INET, SOCK_STREAM, 0)) == -1)
-    {
-        perror("Cannot create socket");
-        exit(1);
-    }
-
-    // Initialize and set up the address structure
-    memset((char *)&server, 0, sizeof(struct sockaddr_in));
-    server.sin_family = AF_INET;
-    server.sin_port = htons(port);
-    if ((hp = gethostbyname(host)) == NULL)
-    {
-        fprintf(stderr, "Unknown server address\n");
-        exit(1);
-    }
-
-    // Copy the server address
-    memcpy((char *)&server.sin_addr, hp->h_addr, hp->h_length);
-
-    // Connecting to the server
-    if (connect (sd, (struct sockaddr *)&server, sizeof(server)) == -1)
-    {
-        fprintf(stderr, "Can't connect to server\n");
-        perror("connect");
-        exit(1);
-    }
-    printf("Connected:    Server Name: %s\n", hp->h_name);
-    pptr = hp->h_addr_list;
-    printf("\t\tIP Address: %s\n", inet_ntoa(server.sin_addr));
-    printf("Transmiting:\n");
-    memset((char *)sbuf, 0, sizeof(sbuf));
-    fgets(sbuf, sizeof(sbuf), stdin); // get user's text
-
-    // Transmit data through the socket
-    ns = send (sd, sbuf, BUFSIZE, 0);
-    printf("Receive:\n");
-    bp = rbuf;
-    bytes_to_read = BUFSIZE;
-
-    // client makes repeated calls to recv until no more data is expected to arrive.
-    while ((n = recv (sd, bp, bytes_to_read, 0)) < BUFSIZE)
-    {
-        bp += n;
-        bytes_to_read -= n;
-        if (n == 0)
-            break;
-    }
-    printf ("%s\n", rbuf);
-    closesocket (sd);
-    WSACleanup();
-    exit(0);
 }
+
+void Client::start() {
+       SOCKET writeSocket;
+       SOCKADDR_IN server;
+       INT Ret;
+       HANDLE ThreadHandle;
+       DWORD ThreadId;
+       WSAEVENT AcceptEvent;
+       struct hostent* hp;
+       char localHost[] = "127.0.0.1";
+
+       if ((Ret = WSAStartup(0x0202,&wsaData)) != 0)
+       {
+          printf("WSAStartup failed with error %d\n", Ret);
+          WSACleanup();
+          return;
+       }
+       if ((hp = gethostbyname(localHost)) == NULL)
+           {
+               qDebug() << GetLastError() << " Unknown server address";
+               exit(1);
+           }
+
+       if ((writeSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
+          WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
+       {
+          printf("Failed to get a socket %d\n", WSAGetLastError());
+          return;
+       }
+
+       server.sin_family = AF_INET;
+       server.sin_addr.s_addr = htonl(INADDR_ANY);
+       server.sin_port = htons(PORT);
+       memcpy((char*)& server.sin_addr, hp->h_addr, hp->h_length);
+
+       if (connect(writeSocket,(struct sockaddr*) &server, sizeof(server)) == -1) {
+            qDebug() << "can't connect to server";
+       };
+
+       // Create a worker thread to service completed I/O requests.
+
+       if ((ThreadHandle = CreateThread(NULL, 0, ClientWorkerThread, (LPVOID) &writeSocket, 0, &ThreadId)) == NULL)
+       {
+          printf("CreateThread failed with error %d\n", GetLastError());
+          return;
+       }
+
+       WaitForSingleObject(ThreadHandle, INFINITE);
+}
+
+DWORD WINAPI Client::ClientWorkerThread(LPVOID lpParameter){
+    DWORD Flags, SendBytes, RecvBytes, Index;
+    LPCLIENT_INFORMATION SocketInfo;
+    WSAEVENT EventArray[1];
+
+    SocketInfo = new CLIENT_INFORMATION;
+
+    SOCKET *writeSocket = (SOCKET*) lpParameter;
+    // Save the accept event in the event array.
+    char test[] = "The quick brown fox jumped over the lazy log. Or something like that.";
+    sprintf(SocketInfo->Buffer, test);
+    SocketInfo->Socket = *writeSocket;
+    ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
+    SocketInfo->BytesToSend = 10;
+    SocketInfo->BytesLeft = 0;
+    SocketInfo->DataBuf.len = sizeof(SocketInfo->Buffer);
+    SocketInfo->DataBuf.buf = SocketInfo->Buffer;
+    Flags = 0;
+    int fileSize = FileManager::getFileSize();
+    int remaining = fileSize;
+    qDebug() << "reading file with length " << remaining;
+    while(remaining > 0) {
+        int packetSize = DATA_BUFSIZE;
+        if(remaining < DATA_BUFSIZE) {
+            packetSize = remaining;
+        }
+        int position = fileSize - remaining;
+
+        FileManager::readFromFile(SocketInfo->DataBuf.buf, position, packetSize);
+        if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0,
+            &(SocketInfo->Overlapped), ClientWorkerRoutine) == SOCKET_ERROR)
+        {
+            if (WSAGetLastError() != WSA_IO_PENDING)
+            {
+                printf("WSASend() failed with error %d\n", WSAGetLastError());
+                return false;
+            }
+        }
+        remaining = remaining - packetSize;
+
+        //place thread in alertable state
+        SleepEx(INFINITE, TRUE);
+    }
+
+    return TRUE;
+};
+
+
+void CALLBACK Client:: ClientWorkerRoutine(DWORD Error, DWORD BytesTransferred,
+                            LPWSAOVERLAPPED Overlapped, DWORD InFlags) {
+    DWORD SendBytes, RecvBytes;
+    DWORD Flags;
+
+    // Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
+    LPCLIENT_INFORMATION SI = (LPCLIENT_INFORMATION) Overlapped;
+
+    qDebug() << SI->DataBuf.buf;
+    if (Error != 0)
+    {
+      printf("I/O operation failed with error %d\n", Error);
+    }
+
+    if (BytesTransferred == 0)
+    {
+       printf("Closing socket %d\n", SI->Socket);
+    }
+
+    if (Error != 0 || BytesTransferred == 0)
+    {
+       closesocket(SI->Socket);
+       GlobalFree(SI);
+       return;
+    }
+    if (BytesTransferred < SI->BytesToSend) {
+        SI->BytesLeft = SI->BytesToSend - BytesTransferred;
+        //do it again
+        if (WSASend(SI->Socket, &(SI->DataBuf), 1, &SendBytes, 0,
+            &(SI->Overlapped), ClientWorkerRoutine) == SOCKET_ERROR)
+        {
+            if (WSAGetLastError() != WSA_IO_PENDING)
+            {
+                printf("WSASend() failed with error %d\n", WSAGetLastError());
+                return;
+            }
+        }
+    }
+
+
+    // Check to see if the BytesRECV field equals zero. If this is so, then
+    // this means a WSARecv call just completed so update the BytesRECV field
+    // with the BytesTransferred value from the completed WSARecv() call.
+
+//      if (SI->BytesRECV == 0)
+//      {
+//         SI->BytesRECV = BytesTransferred;
+//         SI->BytesSEND = 0;
+//      }
+//      else
+//      {
+//         SI->BytesSEND += BytesTransferred;
+//      }
+
+//      if (SI->BytesRECV > SI->BytesSEND)
+//      {
+
+//         // Post another WSASend() request.
+//         // Since WSASend() is not gauranteed to send all of the bytes requested,
+//         // continue posting WSASend() calls until all received bytes are sent.
+
+//         ZeroMemory(&(SI->Overlapped), sizeof(WSAOVERLAPPED));
+
+//         SI->DataBuf.buf = SI->Buffer + SI->BytesSEND;
+//         SI->DataBuf.len = SI->BytesRECV - SI->BytesSEND;
+
+//         if (WSASend(SI->Socket, &(SI->DataBuf), 1, &SendBytes, 0,
+//            &(SI->Overlapped), WorkerRoutine) == SOCKET_ERROR)
+//         {
+//            if (WSAGetLastError() != WSA_IO_PENDING)
+//            {
+//               printf("WSASend() failed with error %d\n", WSAGetLastError());
+//               return;
+//            }
+//         }
+//      }
+//      else
+//      {
+//         SI->BytesRECV = 0;
+
+//         // Now that there are no more bytes to send post another WSARecv() request.
+
+//         Flags = 0;
+//         ZeroMemory(&(SI->Overlapped), sizeof(WSAOVERLAPPED));
+
+//         SI->DataBuf.len = DATA_BUFSIZE;
+//         SI->DataBuf.buf = SI->Buffer;
+
+//         if (WSARecv(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
+//            &(SI->Overlapped), WorkerRoutine) == SOCKET_ERROR)
+//         {
+//            if (WSAGetLastError() != WSA_IO_PENDING )
+//            {
+//               printf("WSARecv() failed with error %d\n", WSAGetLastError());
+//               return;
+//            }
+//         }
+//      }
+}
+

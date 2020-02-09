@@ -27,7 +27,7 @@
      <string/>
     </property>
    </widget>
-   <widget class="QRadioButton" name="radioButton">
+   <widget class="QRadioButton" name="udpRadioBtn">
     <property name="geometry">
      <rect>
       <x>140</x>
@@ -40,7 +40,7 @@
      <string>UDP</string>
     </property>
    </widget>
-   <widget class="QRadioButton" name="radioButton_2">
+   <widget class="QRadioButton" name="tcpRadioBtn">
     <property name="geometry">
      <rect>
       <x>80</x>
@@ -78,7 +78,7 @@
     <property name="title">
      <string>Connect As Client</string>
     </property>
-    <widget class="QLineEdit" name="lineEdit_2">
+    <widget class="QLineEdit" name="numOfTimeEdit">
      <property name="geometry">
       <rect>
        <x>250</x>
@@ -101,7 +101,7 @@
       <string>Packet Size:</string>
      </property>
     </widget>
-    <widget class="QLineEdit" name="lineEdit">
+    <widget class="QLineEdit" name="packetSizeEdit">
      <property name="geometry">
       <rect>
        <x>110</x>
@@ -124,7 +124,7 @@
       <string>Number of times to send random data: </string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton">
+    <widget class="QPushButton" name="selectFileBtn">
      <property name="geometry">
       <rect>
        <x>140</x>
@@ -150,7 +150,7 @@
       <string>Or, pick file to send:</string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_2">
+    <widget class="QPushButton" name="clientStartBtn">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -212,7 +212,7 @@
       <string>Packet Size: </string>
      </property>
     </widget>
-    <widget class="QPushButton" name="pushButton_3">
+    <widget class="QPushButton" name="serverStartBtn">
      <property name="geometry">
       <rect>
        <x>10</x>
@@ -254,8 +254,8 @@
    </widget>
    <zorder>clientBox</zorder>
    <zorder>label</zorder>
-   <zorder>radioButton</zorder>
-   <zorder>radioButton_2</zorder>
+   <zorder>udpRadioBtn</zorder>
+   <zorder>tcpRadioBtn</zorder>
    <zorder>label_2</zorder>
    <zorder>serverBox</zorder>
    <zorder>status_text_edit</zorder>
@@ -267,7 +267,7 @@
      <x>0</x>
      <y>0</y>
      <width>882</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">

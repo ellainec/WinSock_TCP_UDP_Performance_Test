@@ -2,12 +2,9 @@
 #define TCPSERVER_H
 
 #include "server.h"
+#include "Definitions.h"
 #include <QDebug>
 
-typedef struct _ACCEPT_INFORMATION {
-    WSAEVENT AcceptEvent;
-    SOCKET AcceptSocket;
-} ACCEPT_INFORMATION, * LPACCEPT_INFORMATION;
 
 class TCPServer : public Server
 {
