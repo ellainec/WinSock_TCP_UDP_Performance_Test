@@ -1,10 +1,5 @@
 #include "client.h"
 
-Client::Client()
-{
-
-}
-
 void Client::start() {
        SOCKET writeSocket;
        SOCKADDR_IN server;
@@ -27,11 +22,20 @@ void Client::start() {
                exit(1);
            }
 
-       if ((writeSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
-          WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
-       {
-          printf("Failed to get a socket %d\n", WSAGetLastError());
-          return;
+       if (client_protocol == protocol::TCP) {
+           if ((writeSocket = WSASocket(AF_INET, SOCK_STREAM, 0, NULL, 0,
+              WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
+           {
+              printf("Failed to get a socket %d\n", WSAGetLastError());
+              return;
+           }
+       } else {
+           if ((writeSocket = WSASocket(AF_INET, SOCK_DGRAM, 0, NULL, 0,
+              WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET)
+           {
+              printf("Failed to get a socket %d\n", WSAGetLastError());
+              return;
+           }
        }
 
        server.sin_family = AF_INET;
@@ -55,6 +59,9 @@ void Client::start() {
 }
 
 DWORD WINAPI Client::ClientWorkerThread(LPVOID lpParameter){
+    CRITICAL_SECTION CriticalSection;
+    InitializeCriticalSection(&CriticalSection);
+    EnterCriticalSection(&CriticalSection);
     DWORD Flags, SendBytes, RecvBytes, Index;
     LPCLIENT_INFORMATION SocketInfo;
     WSAEVENT EventArray[1];
@@ -63,26 +70,27 @@ DWORD WINAPI Client::ClientWorkerThread(LPVOID lpParameter){
 
     SOCKET *writeSocket = (SOCKET*) lpParameter;
     // Save the accept event in the event array.
-    char test[] = "The quick brown fox jumped over the lazy log. Or something like that.";
-    sprintf(SocketInfo->Buffer, test);
     SocketInfo->Socket = *writeSocket;
     ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
-    SocketInfo->BytesToSend = 10;
+    SocketInfo->BytesToSend = DATA_BUFSIZE;
     SocketInfo->BytesLeft = 0;
     SocketInfo->DataBuf.len = sizeof(SocketInfo->Buffer);
     SocketInfo->DataBuf.buf = SocketInfo->Buffer;
     Flags = 0;
     int fileSize = FileManager::getFileSize();
-    int remaining = fileSize;
+    volatile int remaining = fileSize;
     qDebug() << "reading file with length " << remaining;
     while(remaining > 0) {
         int packetSize = DATA_BUFSIZE;
         if(remaining < DATA_BUFSIZE) {
             packetSize = remaining;
+            SocketInfo->DataBuf.len = packetSize;
+            memset(SocketInfo->DataBuf.buf, 0, sizeof(SocketInfo->DataBuf.buf));
         }
         int position = fileSize - remaining;
 
         FileManager::readFromFile(SocketInfo->DataBuf.buf, position, packetSize);
+        qDebug() << SocketInfo->DataBuf.buf;
         if (WSASend(SocketInfo->Socket, &(SocketInfo->DataBuf), 1, &SendBytes, 0,
             &(SocketInfo->Overlapped), ClientWorkerRoutine) == SOCKET_ERROR)
         {
@@ -97,6 +105,7 @@ DWORD WINAPI Client::ClientWorkerThread(LPVOID lpParameter){
         //place thread in alertable state
         SleepEx(INFINITE, TRUE);
     }
+    LeaveCriticalSection(&CriticalSection);
 
     return TRUE;
 };
@@ -110,7 +119,7 @@ void CALLBACK Client:: ClientWorkerRoutine(DWORD Error, DWORD BytesTransferred,
     // Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
     LPCLIENT_INFORMATION SI = (LPCLIENT_INFORMATION) Overlapped;
 
-    qDebug() << SI->DataBuf.buf;
+    //qDebug() << SI->DataBuf.buf;
     if (Error != 0)
     {
       printf("I/O operation failed with error %d\n", Error);
@@ -127,19 +136,19 @@ void CALLBACK Client:: ClientWorkerRoutine(DWORD Error, DWORD BytesTransferred,
        GlobalFree(SI);
        return;
     }
-    if (BytesTransferred < SI->BytesToSend) {
-        SI->BytesLeft = SI->BytesToSend - BytesTransferred;
-        //do it again
-        if (WSASend(SI->Socket, &(SI->DataBuf), 1, &SendBytes, 0,
-            &(SI->Overlapped), ClientWorkerRoutine) == SOCKET_ERROR)
-        {
-            if (WSAGetLastError() != WSA_IO_PENDING)
-            {
-                printf("WSASend() failed with error %d\n", WSAGetLastError());
-                return;
-            }
-        }
-    }
+//    if (BytesTransferred < SI->BytesToSend) {
+//        SI->BytesLeft = SI->BytesToSend - BytesTransferred;
+//        //do it again
+//        if (WSASend(SI->Socket, &(SI->DataBuf), 1, &SendBytes, 0,
+//            &(SI->Overlapped), ClientWorkerRoutine) == SOCKET_ERROR)
+//        {
+//            if (WSAGetLastError() != WSA_IO_PENDING)
+//            {
+//                printf("WSASend() failed with error %d\n", WSAGetLastError());
+//                return;
+//            }
+//        }
+//    }
 
 
     // Check to see if the BytesRECV field equals zero. If this is so, then

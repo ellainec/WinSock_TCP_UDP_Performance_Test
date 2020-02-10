@@ -7,7 +7,7 @@
 class UDPServer : public Server
 {
 public:
-    UDPServer();
+    UDPServer(){};
     bool start() override;
     bool createSocket() override;
     static void CALLBACK UDPWorkerRoutine(DWORD Error, DWORD BytesTransferred,

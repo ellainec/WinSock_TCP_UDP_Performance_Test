@@ -7,10 +7,12 @@
 #define PORT 5150
 #define DATA_BUFSIZE 1024
 
+enum protocol {TCP, UDP};
+
 typedef struct _SOCKET_INFORMATION {
    OVERLAPPED Overlapped;
    SOCKET Socket;
-   CHAR Buffer[DATA_BUFSIZE];
+   CHAR Buffer[DATA_BUFSIZE+1];
    WSABUF DataBuf;
    DWORD BytesSEND;
    DWORD BytesRECV;

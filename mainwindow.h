@@ -6,6 +6,7 @@
 #include <QMessageBox>
 #include "ui_mainwindow.h"
 #include "tcpserver.h"
+#include "udpserver.h"
 #include "client.h"
 #include <qfiledialog.h>
 
@@ -22,7 +23,7 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
     void print(std::string text);
-    enum protocol {TCP, UDP};
+    protocol prot;
 
 private slots:
 
@@ -38,16 +39,16 @@ private slots:
 
     void on_tcpRadioBtn_clicked() {
         prot = protocol::TCP;
-    };
+    }
 
     void on_udpRadioBtn_clicked(){
         prot = protocol::UDP;
-    };
+    }
 
     void on_selectFileBtn_clicked(){
         filename = QFileDialog::getOpenFileName(this, tr("Open File to send"));
         qDebug() << filename << " selected";
-    };
+    }
 
 private:
     Ui::MainWindow *ui;
@@ -56,7 +57,6 @@ private:
     DWORD ThreadId;
     static DWORD WINAPI ServerThread(LPVOID lpParameter);
     static DWORD WINAPI ClientThread(LPVOID lpParameter);
-    protocol prot;
     QString filename;
 };
 #endif // MAINWINDOW_H

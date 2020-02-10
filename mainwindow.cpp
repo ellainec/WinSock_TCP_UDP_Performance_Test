@@ -30,13 +30,20 @@ MainWindow::MainWindow(QWidget *parent)
 }
 
 DWORD WINAPI MainWindow::ServerThread(LPVOID lpParameter) {
-    Server* server = new TCPServer();
+    Server* server;
+    protocol *sp = (protocol*) lpParameter;
+    if(*sp == protocol::TCP) {
+        server = new TCPServer;
+    } else {
+        server = new UDPServer;
+    }
     server->start();
     return true;
 }
 
 DWORD WINAPI MainWindow::ClientThread(LPVOID lpParameter) {
-    Client* client = new Client();
+    protocol* cp = (protocol*)lpParameter;
+    Client* client = new Client(*cp);
     client->start();
     return true;
 }
@@ -95,7 +102,7 @@ void MainWindow::on_action_Receive_As_Server_triggered()
 
 void MainWindow::on_serverStartBtn_clicked()
 {
-    if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, NULL, 0, &ThreadId)) == NULL)
+    if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, (LPVOID)&prot, 0, &ThreadId)) == NULL)
     {
         printf("CreateThread failed with error %d\n", GetLastError());
         return;
@@ -104,7 +111,7 @@ void MainWindow::on_serverStartBtn_clicked()
 
 void MainWindow::on_clientStartBtn_clicked()
 {
-    if ((ThreadHandle = CreateThread(NULL, 0, ClientThread, NULL, 0, &ThreadId)) == NULL)
+    if ((ThreadHandle = CreateThread(NULL, 0, ClientThread, (LPVOID)&prot, 0, &ThreadId)) == NULL)
     {
         printf("CreateThread failed with error %d\n", GetLastError());
         return;
