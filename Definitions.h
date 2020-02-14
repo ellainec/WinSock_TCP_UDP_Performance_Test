@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "filemanager.h"
 #define PORT 5150
-#define MAX_LEN 10240
+#define MAX_LEN 70240
 
 enum protocol {TCP, UDP};
 enum role {CLIENT, SERVER};

@@ -17,7 +17,7 @@ void Client::start() {
 
        if ((Ret = WSAStartup(0x0202,&wsaData)) != 0)
        {
-          printf("WSAStartup failed with error %d\n", Ret);
+           emit printToScreen("WSAStartup failed with error %d\n" + Ret);
           WSACleanup();
           return;
        }
@@ -62,7 +62,18 @@ void Client::start() {
        WSAEVENT EventArray[1];
        int times = 0;
        while(times < info->timesToSend) {
-
+//           if (WSASend(writeSocket, &DataBuf, 1, &SendBytes, 0,
+//                         (WSAOVERLAPPED*)SocketInfo, 0) == SOCKET_ERROR)
+//                     {
+//                         if (WSAGetLastError() != WSA_IO_PENDING)
+//                         {
+//                             printf("WSASend() failed with error %d\n", WSAGetLastError());
+//                             return;
+//                         }
+//                     }
+//           times++;
+//           emit printToScreen("Sent packet " + QString::number(times) + ": " + SocketInfo->BytesSEND);
+           //           times++;
            if (WSASend(writeSocket, &DataBuf, 1, &SendBytes, 0,
                (WSAOVERLAPPED*)SocketInfo, ClientWorkerRoutine) == SOCKET_ERROR)
            {
@@ -78,6 +89,7 @@ void Client::start() {
            //place thread in alertable state
            SleepEx(INFINITE, TRUE);
        }
+
        delete SocketInfo;
        closesocket(writeSocket);
        emit printToScreen("Socket closed.");

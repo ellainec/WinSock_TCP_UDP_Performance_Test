@@ -8,6 +8,7 @@
 
 class TCPServer : public Server
 {
+        Q_OBJECT
 private:
     bool createSocket() override;
     bool start() override;
@@ -18,6 +19,7 @@ public:
     static void CALLBACK TCPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
        LPWSAOVERLAPPED Overlapped, DWORD InFlags);
     static DWORD WINAPI TCPWorkerThread(LPVOID lpParameter);
-
+signals:
+    void printToScreen(QString text);
 };
 #endif // TCPSERVER_H

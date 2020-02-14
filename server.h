@@ -28,7 +28,7 @@ public:
     };
     virtual bool start() = 0;
 signals:
-    void printToScreen(QString text);
+    virtual void printToScreen(QString);
 };
 
 #endif // SERVER_H

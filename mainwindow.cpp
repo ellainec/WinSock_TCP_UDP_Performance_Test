@@ -75,10 +75,12 @@ void MainWindow::start() {
         if(server == nullptr) {
             if(connectDialog->info.protocolSelected == protocol::TCP) {
                 server = new TCPServer(&connectDialog->info);
+                connect((TCPServer*)server, &TCPServer::printToScreen, this, &MainWindow::print);
             } else {
                 server = new UDPServer(&connectDialog->info);
             }
         }
+
         if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, (LPVOID)&connectDialog->info, 0, &ThreadId)) == NULL)
         {
             printf("CreateThread failed with error %d\n", GetLastError());
@@ -89,11 +91,11 @@ void MainWindow::start() {
 
 bool MainWindow::validateSettings() {
     //todo: remove later
-    connectDialog->info.port = 5150;
-    sprintf(connectDialog->info.ipAddress, "127.0.0.1");
-    connectDialog->info.packetSize = 10240;
-    connectDialog->info.timesToSend = 10;
-    connectDialog->info.protocolSelected = protocol::TCP;
+//    connectDialog->info.port = 9898;
+//    sprintf(connectDialog->info.ipAddress, "127.0.0.1");
+//    connectDialog->info.packetSize = 60000;
+//    connectDialog->info.timesToSend = 100;
+//    connectDialog->info.protocolSelected = protocol::UDP;
 
     if (connectDialog->info.roleSelected != role::CLIENT && connectDialog->info.roleSelected != role::SERVER) {
         return false;

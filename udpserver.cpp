@@ -13,6 +13,8 @@ bool UDPServer::createSocket() {
     if (setsockopt(ListenSocket,SOL_SOCKET, SO_REUSEADDR, optval, sizeof(optval)) < 0) {
         qDebug() << "set sock opt failed" ;
     };
+    int recvBufSize = 60000*100;
+    int err = setsockopt(ListenSocket, SOL_SOCKET, SO_RCVBUF,(const char*)&recvBufSize, sizeof(recvBufSize));
     delete[] optval;
     return true;
 }
@@ -22,84 +24,55 @@ bool UDPServer::start() {
         qDebug() << "setup failed";
         return false;
     }
+    DWORD Flags;
+    LPACCEPT_INFORMATION AcceptInfo;
+    LPSOCKET_INFORMATION SocketInfo;
+    WSAEVENT EventArray[1];
+    DWORD Index;
+    DWORD RecvBytes;
 
-    // Create a worker thread to service completed I/O requests.
+    SocketInfo = new SOCKET_INFORMATION;
+    // Fill in the details of our accepted socket.
+    ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
+    SocketInfo->BytesSEND = 0;
+    SocketInfo->BytesRECV = 0;
 
-    if ((ThreadHandle = CreateThread(NULL, 0, UDPWorkerThread, &ListenSocket, 0, &ThreadId)) == NULL)
-    {
-        qDebug() << "thread creation failed";
-       printf("CreateThread failed with error %d\n", GetLastError());
-       return false;
+    SocketInfo->DataBuf.buf = SocketInfo->Buffer;
+    SocketInfo->DataBuf.len = info->packetSize;
+    SocketInfo->Socket = ListenSocket;
+    Flags = 0;
+    FileManager::clearFile();
+    if (WSARecvFrom(ListenSocket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
+        NULL, NULL, &(SocketInfo->Overlapped), UDPWorkerRoutine) == SOCKET_ERROR) {
+        if (WSAGetLastError() != WSA_IO_PENDING)
+        {
+            qDebug() << "WSARecv() failed with error" << WSAGetLastError();
+            return FALSE;
+        }
+        //check for WSAEDISCON || WSAECONNRESET
     }
 
-    WaitForSingleObject(ThreadHandle, INFINITE);
+    while(true) {
+        SleepEx(INFINITE, true);
+        //FileManager::printToFile(SocketInfo->Buffer);
+    }
 }
-
-DWORD WINAPI UDPServer::UDPWorkerThread(LPVOID lpParameter)
-   {
-      DWORD Flags;
-      LPACCEPT_INFORMATION AcceptInfo;
-      LPSOCKET_INFORMATION SocketInfo;
-      WSAEVENT EventArray[1];
-      DWORD Index;
-      DWORD RecvBytes;
-
-      SOCKET* socket = (SOCKET*) lpParameter;
-      SocketInfo = new SOCKET_INFORMATION;
-
-
-         // Fill in the details of our accepted socket.
-         ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
-         SocketInfo->BytesSEND = 0;
-         SocketInfo->BytesRECV = 0;
-         SocketInfo->DataBuf.buf = SocketInfo->Buffer;
-         SocketInfo->DataBuf.len = sizeof(SocketInfo->Buffer);
-         Flags = 0;
-         FileManager::clearFile();
-         while(true) {
-             if (WSARecvFrom(*socket, &(SocketInfo->DataBuf), 1, &RecvBytes, &Flags,
-                 NULL, NULL, &(SocketInfo->Overlapped), UDPWorkerRoutine) == SOCKET_ERROR) {
-                 if (WSAGetLastError() != WSA_IO_PENDING)
-                 {
-                     qDebug() << "WSARecv() failed with error" << WSAGetLastError();
-                     return FALSE;
-                 }
-                 //check for WSAEDISCON || WSAECONNRESET
-             }
-             SleepEx(INFINITE, true);
-         }
-          printf("Socket %d connected\n", AcceptInfo->AcceptSocket);
-
-      return TRUE;
-   }
 
    void UDPServer::UDPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
       LPWSAOVERLAPPED Overlapped, DWORD InFlags)
    {
       DWORD SendBytes, RecvBytes;
       DWORD Flags;
+      Flags = 0;
 
       // Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
       LPSOCKET_INFORMATION SI = (LPSOCKET_INFORMATION) Overlapped;
-
-      CRITICAL_SECTION CriticalSection;
-      InitializeCriticalSection(&CriticalSection);
-      EnterCriticalSection(&CriticalSection);
-      std::string receivedString {SI->DataBuf.buf};
-      std::string writeString = receivedString.substr(0, MAX_LEN);
-      std::ofstream writeFile;
-      writeFile.open("./test.txt", std::ios_base::out|std::ios_base::app);
-      if(!writeFile.is_open()) {
-          qDebug() << "open file failed";
-      }
-      writeFile << SI->DataBuf.buf << std::endl;
-      writeFile.close();
-      LeaveCriticalSection(&CriticalSection);
-      //FileManager::printToFile(SI->DataBuf.buf);
       SI->BytesRECV += BytesTransferred;
-      qDebug() << "Bytes received: " << SI->BytesRECV;
+      if (BytesTransferred > 0) {
+          FileManager::printToFile(SI->Buffer);
+      }
+      memset(SI->Buffer, 0, sizeof(SI->Buffer));
 
-      //qDebug() << SI->DataBuf.buf;
       if (Error != 0)
       {
         printf("I/O operation failed with error %d\n", Error);
@@ -115,6 +88,15 @@ DWORD WINAPI UDPServer::UDPWorkerThread(LPVOID lpParameter)
          closesocket(SI->Socket);
          GlobalFree(SI);
          return;
+      }
+      if (WSARecvFrom(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
+          NULL, NULL, &(SI->Overlapped), UDPWorkerRoutine) == SOCKET_ERROR) {
+          if (WSAGetLastError() != WSA_IO_PENDING)
+          {
+              qDebug() << "WSARecv() failed with error" << WSAGetLastError();
+              return;
+          }
+          //check for WSAEDISCON || WSAECONNRESET
       }
 
 }

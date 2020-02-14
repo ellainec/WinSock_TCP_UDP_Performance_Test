@@ -13,29 +13,27 @@ bool TCPServer::createSocket() {
 }
 
 bool TCPServer::start() {
-    //WSAOVERLAPPED Overlapped;
+    emit printToScreen("Server starting...");
     WSAEVENT EventArray[MAXIMUM_WAIT_OBJECTS];
     DWORD Flags, RecvBytes, Index;
     char buffer[MAX_LEN];
     LPSOCKET_INFORMATION SocketInfo;
 
     if (setUp() == false) {
-        qDebug() << "setup failed";
+        emit printToScreen("Setup failed");
         return false;
     }
     AcceptInfo = new ACCEPT_INFORMATION;
     AcceptInfo->stopped = false;
     if(listen(ListenSocket, 5)){
-         qDebug() << "can't listen";
-         printf("listen() failed with error %d\n", WSAGetLastError());
+        emit printToScreen("listen() failed with error %d\n" + WSAGetLastError());
          return false;
     }
 
 
     if ((AcceptInfo->AcceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
     {
-        qDebug()<< "acceptEvent creation failed";
-       printf("WSACreateEvent() failed with error %d\n", WSAGetLastError());
+        emit printToScreen("WSACreateEvent() failed with error %d\n" + WSAGetLastError());
        return false;
     }
     AcceptInfo->AcceptSocket = accept(ListenSocket, NULL, NULL);
@@ -57,7 +55,7 @@ bool TCPServer::start() {
         &SocketInfo->Overlapped, TCPWorkerRoutine) == SOCKET_ERROR) {
         if (WSAGetLastError() != WSA_IO_PENDING) {
             printf("WSARecv() failed with error %d\n", WSAGetLastError());
-            return FALSE;
+            return false;
         }
           //check for WSAEDISCON || WSAECONNRESET
     }
@@ -66,10 +64,15 @@ bool TCPServer::start() {
             qDebug()<< "incoming event creation failed: " << WSAGetLastError();
            return false;
     }
-    while(true) {
+    bool keepGoing = true;
+    Index = 0;
+    while(SocketInfo->stopped == false) {
         SleepEx(INFINITE, TRUE);
     }
-
+    closesocket(AcceptInfo->AcceptSocket);
+    closesocket(ListenSocket);
+    delete AcceptInfo;
+    delete SocketInfo;
 }
 
    void TCPServer::TCPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
@@ -99,9 +102,8 @@ bool TCPServer::start() {
 
       if (Error != 0 || BytesTransferred == 0)
       {
-          qDebug() << "error: " << Error;
-         closesocket(SI->Socket);
-         GlobalFree(SI);
+          SI->stopped = true;
+         qDebug() << "error: " << Error;
          return;
       }
       memset(SI->Buffer, 0, sizeof(SI->Buffer));
