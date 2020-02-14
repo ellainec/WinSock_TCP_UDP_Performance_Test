@@ -28,7 +28,7 @@ void FileManager::readFromFile(char* buffer, int beg, int length) {
 
 int FileManager::getFileSize(){
     std::ifstream f;
-    f.open("D:/CST/4985/Assignment2/Assignment2/ReadFrom.txt", std::ifstream::binary);
+    f.open("test.txt", std::ifstream::binary);
     if(f.is_open()) {
         f.seekg(0, f.end);
         return f.tellg();

@@ -13,10 +13,11 @@ private:
     bool start() override;
     LPACCEPT_INFORMATION AcceptInfo;
 public:
-    TCPServer(){};
+    TCPServer(CONNECT_INFORMATION *info) : Server(info){};
+    ~TCPServer() override {};
     static void CALLBACK TCPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
        LPWSAOVERLAPPED Overlapped, DWORD InFlags);
     static DWORD WINAPI TCPWorkerThread(LPVOID lpParameter);
-};
 
+};
 #endif // TCPSERVER_H

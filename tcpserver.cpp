@@ -13,12 +13,18 @@ bool TCPServer::createSocket() {
 }
 
 bool TCPServer::start() {
+    //WSAOVERLAPPED Overlapped;
+    WSAEVENT EventArray[MAXIMUM_WAIT_OBJECTS];
+    DWORD Flags, RecvBytes, Index;
+    char buffer[MAX_LEN];
+    LPSOCKET_INFORMATION SocketInfo;
+
     if (setUp() == false) {
         qDebug() << "setup failed";
         return false;
     }
     AcceptInfo = new ACCEPT_INFORMATION;
-
+    AcceptInfo->stopped = false;
     if(listen(ListenSocket, 5)){
          qDebug() << "can't listen";
          printf("listen() failed with error %d\n", WSAGetLastError());
@@ -32,98 +38,55 @@ bool TCPServer::start() {
        printf("WSACreateEvent() failed with error %d\n", WSAGetLastError());
        return false;
     }
+    AcceptInfo->AcceptSocket = accept(ListenSocket, NULL, NULL);
+    Flags = 0;
 
+    //ZeroMemory(&Overlapped, sizeof(WSAOVERLAPPED));
 
-    // Create a worker thread to service completed I/O requests.
+    SocketInfo = new SOCKET_INFORMATION;
+    SocketInfo->Socket = AcceptInfo->AcceptSocket;
+    ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
+    SocketInfo->BytesSEND = 0;
+    SocketInfo->BytesRECV = 0;
+    SocketInfo->DataBuf.len = MAX_LEN;
+    SocketInfo->DataBuf.buf = SocketInfo->Buffer;
+    SocketInfo->stopped = false;
 
-    if ((ThreadHandle = CreateThread(NULL, 0, TCPWorkerThread, (LPVOID)AcceptInfo, 0, &ThreadId)) == NULL)
-    {
-        qDebug() << "thread creation failed";
-       printf("CreateThread failed with error %d\n", GetLastError());
-       return false;
+    FileManager::clearFile();
+    if (WSARecv(AcceptInfo->AcceptSocket, &SocketInfo->DataBuf, 1, &RecvBytes, &Flags,
+        &SocketInfo->Overlapped, TCPWorkerRoutine) == SOCKET_ERROR) {
+        if (WSAGetLastError() != WSA_IO_PENDING) {
+            printf("WSARecv() failed with error %d\n", WSAGetLastError());
+            return FALSE;
+        }
+          //check for WSAEDISCON || WSAECONNRESET
     }
 
-    while(TRUE)
-    {
-       AcceptInfo->AcceptSocket = accept(ListenSocket, NULL, NULL);
-
-       if (WSASetEvent(AcceptInfo->AcceptEvent) == FALSE)
-       {
-           qDebug() << "set signal failed";
-          printf("WSASetEvent failed with error %d\n", WSAGetLastError());
-          return false;
-       }
+    if ((EventArray[1] = WSACreateEvent()) == WSA_INVALID_EVENT) {
+            qDebug()<< "incoming event creation failed: " << WSAGetLastError();
+           return false;
     }
+    while(true) {
+        SleepEx(INFINITE, TRUE);
+    }
+
 }
-
-DWORD WINAPI TCPServer::TCPWorkerThread(LPVOID lpParameter)
-   {
-      DWORD Flags;
-      LPACCEPT_INFORMATION AcceptInfo;
-      LPSOCKET_INFORMATION SocketInfo;
-      WSAEVENT EventArray[1];
-      DWORD Index;
-      DWORD RecvBytes;
-
-      //LPTHREAD_INFORMATION AI = (LPTHREAD_INFORMATION) lpParameter;
-
-      AcceptInfo = (LPACCEPT_INFORMATION) lpParameter;
-      SocketInfo = new SOCKET_INFORMATION;
-
-      // Save the accept event in the event array.
-
-      EventArray[0] = (WSAEVENT) AcceptInfo->AcceptEvent;
-
-         // Wait for accept() to signal an event and also process WorkerRoutine() returns.
-
-           Index = WSAWaitForMultipleEvents(1, EventArray, FALSE, WSA_INFINITE, TRUE);
-
-            if (Index == WSA_WAIT_FAILED)
-            {
-               printf("WSAWaitForMultipleEvents failed with error %d\n", WSAGetLastError());
-               return FALSE;
-            }
-
-         WSAResetEvent(EventArray[Index - WSA_WAIT_EVENT_0]);
-
-         // Fill in the details of our accepted socket.
-
-         SocketInfo->Socket = AcceptInfo->AcceptSocket;
-         ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
-         SocketInfo->BytesSEND = 0;
-         SocketInfo->BytesRECV = 0;
-         SocketInfo->DataBuf.len = DATA_BUFSIZE;
-         SocketInfo->DataBuf.buf = SocketInfo->Buffer;
-         Flags = 0;
-         FileManager::clearFile();
-         while(true) {
-         if (WSARecv(SocketInfo->Socket, &SocketInfo->DataBuf, 1, &RecvBytes, &Flags,
-            &SocketInfo->Overlapped, TCPWorkerRoutine) == SOCKET_ERROR) {
-            if (WSAGetLastError() != WSA_IO_PENDING)
-            {
-               printf("WSARecv() failed with error %d\n", WSAGetLastError());
-               return FALSE;
-            }
-            //check for WSAEDISCON || WSAECONNRESET
-         }
-             SleepEx(INFINITE, true);
-         }
-         printf("Socket %d connected\n", AcceptInfo->AcceptSocket);
-
-      return TRUE;
-   }
 
    void TCPServer::TCPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
       LPWSAOVERLAPPED Overlapped, DWORD InFlags)
    {
       DWORD SendBytes, RecvBytes;
       DWORD Flags;
+      Flags = 0;
 
       // Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
       LPSOCKET_INFORMATION SI = (LPSOCKET_INFORMATION) Overlapped;
+      SI->BytesRECV += BytesTransferred;
+      if (BytesTransferred > 0) {
+          FileManager::printToFile(SI->Buffer);
+          qDebug() << "Bytes received: " << SI->BytesRECV;
+      }
 
-      FileManager::printToFile(SI->DataBuf.buf);
-      qDebug() << SI->DataBuf.buf;
       if (Error != 0)
       {
         printf("I/O operation failed with error %d\n", Error);
@@ -136,11 +99,21 @@ DWORD WINAPI TCPServer::TCPWorkerThread(LPVOID lpParameter)
 
       if (Error != 0 || BytesTransferred == 0)
       {
+          qDebug() << "error: " << Error;
          closesocket(SI->Socket);
          GlobalFree(SI);
          return;
       }
-
+      memset(SI->Buffer, 0, sizeof(SI->Buffer));
+      if (WSARecv(SI->Socket, &SI->DataBuf, 1, &RecvBytes, &Flags,
+         &SI->Overlapped, TCPWorkerRoutine) == SOCKET_ERROR) {
+         if (WSAGetLastError() != WSA_IO_PENDING)
+         {
+            printf("WSARecv() failed with error %d\n", WSAGetLastError());
+            return;
+         }
+         //check for WSAEDISCON || WSAECONNRESET
+      }
 }
 
 

@@ -82,8 +82,24 @@ DWORD WINAPI UDPServer::UDPWorkerThread(LPVOID lpParameter)
       // Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
       LPSOCKET_INFORMATION SI = (LPSOCKET_INFORMATION) Overlapped;
 
-      FileManager::printToFile(SI->DataBuf.buf);
-      qDebug() << SI->DataBuf.buf;
+      CRITICAL_SECTION CriticalSection;
+      InitializeCriticalSection(&CriticalSection);
+      EnterCriticalSection(&CriticalSection);
+      std::string receivedString {SI->DataBuf.buf};
+      std::string writeString = receivedString.substr(0, MAX_LEN);
+      std::ofstream writeFile;
+      writeFile.open("./test.txt", std::ios_base::out|std::ios_base::app);
+      if(!writeFile.is_open()) {
+          qDebug() << "open file failed";
+      }
+      writeFile << SI->DataBuf.buf << std::endl;
+      writeFile.close();
+      LeaveCriticalSection(&CriticalSection);
+      //FileManager::printToFile(SI->DataBuf.buf);
+      SI->BytesRECV += BytesTransferred;
+      qDebug() << "Bytes received: " << SI->BytesRECV;
+
+      //qDebug() << SI->DataBuf.buf;
       if (Error != 0)
       {
         printf("I/O operation failed with error %d\n", Error);

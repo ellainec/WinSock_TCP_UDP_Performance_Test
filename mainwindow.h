@@ -9,6 +9,7 @@
 #include "udpserver.h"
 #include "client.h"
 #include <qfiledialog.h>
+#include "connectdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -22,33 +23,13 @@ class MainWindow : public QMainWindow
 public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    void print(std::string text);
+    void print(QString text);
     protocol prot;
 
 private slots:
 
     void on_actionHelp_triggered();
 
-    void on_action_Send_As_Client_triggered();
-
-    void on_action_Receive_As_Server_triggered();
-
-    void on_serverStartBtn_clicked();
-
-    void on_clientStartBtn_clicked();
-
-    void on_tcpRadioBtn_clicked() {
-        prot = protocol::TCP;
-    }
-
-    void on_udpRadioBtn_clicked(){
-        prot = protocol::UDP;
-    }
-
-    void on_selectFileBtn_clicked(){
-        filename = QFileDialog::getOpenFileName(this, tr("Open File to send"));
-        qDebug() << filename << " selected";
-    }
 
 private:
     Ui::MainWindow *ui;
@@ -58,5 +39,11 @@ private:
     static DWORD WINAPI ServerThread(LPVOID lpParameter);
     static DWORD WINAPI ClientThread(LPVOID lpParameter);
     QString filename;
+    void start();
+    ConnectDialog *connectDialog = nullptr;
+    Server *server = nullptr;
+    Client *client = nullptr;
+    bool validateSettings();
+    void stop();
 };
 #endif // MAINWINDOW_H

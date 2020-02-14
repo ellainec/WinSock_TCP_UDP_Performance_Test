@@ -17,6 +17,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += \
     client.cpp \
+    connectdialog.cpp \
     filemanager.cpp \
     main.cpp \
     mainwindow.cpp \
@@ -27,6 +28,7 @@ SOURCES += \
 HEADERS += \
     Definitions.h \
     client.h \
+    connectdialog.h \
     filemanager.h \
     mainwindow.h \
     server.h \
@@ -34,6 +36,7 @@ HEADERS += \
     udpserver.h
 
 FORMS += \
+    connectdialog.ui \
     mainwindow.ui
 
 LIBS += -lws2_32

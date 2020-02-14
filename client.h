@@ -1,25 +1,30 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
-#define PORT 5150
-#define DATA_BUFSIZE 1024
 #include "Definitions.h"
 #include <QDebug>
+#include <fstream>
+#include <iostream>
+#include <QObject>
 
-class Client
-{
+class Client : public QObject  {
+    Q_OBJECT
 private:
-    protocol client_protocol;
+    CONNECT_INFORMATION* info;
 public:
-    Client(protocol tcp_or_udp) : client_protocol(tcp_or_udp) {};
+    Client(CONNECT_INFORMATION* info) : info(info) {};
     ~Client(){};
     void start();
     WSADATA wsaData;
+    char *writeBuffer;
 
     static void CALLBACK ClientWorkerRoutine(DWORD Error, DWORD BytesTransferred,
        LPWSAOVERLAPPED Overlapped, DWORD InFlags);
 
     static DWORD WINAPI ClientWorkerThread(LPVOID lpParameter);
-};
 
+signals:
+    void printToScreen(QString text);
+
+};
 #endif // CLIENT_H

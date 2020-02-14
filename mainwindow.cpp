@@ -25,31 +25,98 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
+    , connectDialog(new ConnectDialog)
 {
     ui->setupUi(this);
+    connect(ui->action_Connect_Settings, &QAction::triggered, connectDialog, &ConnectDialog::show);
+    connect(ui->action_Start, &QAction::triggered, this, &MainWindow::start);
+    connect(ui->action_Stop, &QAction::triggered, this, &MainWindow::stop);
+}
+
+void MainWindow::stop() {
+    print("Stopped.");
 }
 
 DWORD WINAPI MainWindow::ServerThread(LPVOID lpParameter) {
     Server* server;
-    protocol *sp = (protocol*) lpParameter;
-    if(*sp == protocol::TCP) {
-        server = new TCPServer;
+    CONNECT_INFORMATION* info = (CONNECT_INFORMATION*) lpParameter;
+    if(info->protocolSelected == protocol::TCP) {
+        server = new TCPServer(info);
     } else {
-        server = new UDPServer;
+        server = new UDPServer(info);
     }
     server->start();
     return true;
 }
 
 DWORD WINAPI MainWindow::ClientThread(LPVOID lpParameter) {
-    protocol* cp = (protocol*)lpParameter;
-    Client* client = new Client(*cp);
+    Client *client = (Client *) lpParameter;
     client->start();
     return true;
 }
 
-void MainWindow::print(std::string text) {
-    ui->status_text_edit->insertPlainText(QString::fromStdString(text));
+void MainWindow::start() {
+    if (!validateSettings()) {
+        print("Missing some Connection Settings");
+        return;
+    }
+
+    if (connectDialog->info.roleSelected == role::CLIENT) {
+        if (client == nullptr) {
+            client = new Client(&connectDialog->info);
+            connect(client, &Client::printToScreen, this, &MainWindow::print);
+        }
+        if ((ThreadHandle = CreateThread(NULL, 0, ClientThread, (LPVOID)client, 0, &ThreadId)) == NULL)
+        {
+            printf("CreateThread failed with error %d\n", GetLastError());
+            return;
+        }
+    } else {
+        if(server == nullptr) {
+            if(connectDialog->info.protocolSelected == protocol::TCP) {
+                server = new TCPServer(&connectDialog->info);
+            } else {
+                server = new UDPServer(&connectDialog->info);
+            }
+        }
+        if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, (LPVOID)&connectDialog->info, 0, &ThreadId)) == NULL)
+        {
+            printf("CreateThread failed with error %d\n", GetLastError());
+            return;
+        }
+    }
+}
+
+bool MainWindow::validateSettings() {
+    //todo: remove later
+    connectDialog->info.port = 5150;
+    sprintf(connectDialog->info.ipAddress, "127.0.0.1");
+    connectDialog->info.packetSize = 10240;
+    connectDialog->info.timesToSend = 10;
+    connectDialog->info.protocolSelected = protocol::TCP;
+
+    if (connectDialog->info.roleSelected != role::CLIENT && connectDialog->info.roleSelected != role::SERVER) {
+        return false;
+    }
+    if (connectDialog->info.protocolSelected != protocol::TCP && connectDialog->info.protocolSelected != protocol::UDP) {
+        return false;
+    }
+
+    if (connectDialog->info.port == 0) {
+       return false;
+    }
+    if (connectDialog->info.packetSize == 0) {
+       return false;
+    }
+    if (connectDialog->info.roleSelected == role::CLIENT && connectDialog->info.timesToSend <=0) {
+       return false;
+    }
+    return true;
+
+}
+void MainWindow::print(QString text) {
+    ui->main_text->insertPlainText(text);
+    ui->main_text->insertPlainText("\n");
 }
 
 MainWindow::~MainWindow()
@@ -86,35 +153,3 @@ void MainWindow::on_actionHelp_triggered()
                           "An attempt will be made to resolve the selected value given user input, and the result will be displayed. \n"
                           "Click on the clear button to clear the result box of all text."));
 }
-
-void MainWindow::on_action_Send_As_Client_triggered()
-{
-    ui->serverBox->setVisible(false);
-    ui->clientBox->setVisible(true);
-}
-
-void MainWindow::on_action_Receive_As_Server_triggered()
-{
-    ui->serverBox->setVisible(true);
-    ui->clientBox->setVisible(false);
-    //ui->serverBox->setVisible(true);
-}
-
-void MainWindow::on_serverStartBtn_clicked()
-{
-    if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, (LPVOID)&prot, 0, &ThreadId)) == NULL)
-    {
-        printf("CreateThread failed with error %d\n", GetLastError());
-        return;
-    }
-}
-
-void MainWindow::on_clientStartBtn_clicked()
-{
-    if ((ThreadHandle = CreateThread(NULL, 0, ClientThread, (LPVOID)&prot, 0, &ThreadId)) == NULL)
-    {
-        printf("CreateThread failed with error %d\n", GetLastError());
-        return;
-    }
-}
-

@@ -6,277 +6,48 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>882</width>
-    <height>486</height>
+    <width>739</width>
+    <height>522</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Assignment 2</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label">
-    <property name="geometry">
-     <rect>
-      <x>50</x>
-      <y>10</y>
-      <width>56</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string/>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="udpRadioBtn">
-    <property name="geometry">
-     <rect>
-      <x>140</x>
-      <y>20</y>
-      <width>61</width>
-      <height>21</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>UDP</string>
-    </property>
-   </widget>
-   <widget class="QRadioButton" name="tcpRadioBtn">
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>20</y>
-      <width>41</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>TCP</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>20</x>
-      <y>20</y>
-      <width>56</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Protocol:</string>
-    </property>
-   </widget>
-   <widget class="QGroupBox" name="clientBox">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>50</y>
-      <width>481</width>
-      <height>231</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Connect As Client</string>
-    </property>
-    <widget class="QLineEdit" name="numOfTimeEdit">
-     <property name="geometry">
-      <rect>
-       <x>250</x>
-       <y>90</y>
-       <width>113</width>
-       <height>22</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_3">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>40</y>
-       <width>71</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Packet Size:</string>
-     </property>
-    </widget>
-    <widget class="QLineEdit" name="packetSizeEdit">
-     <property name="geometry">
-      <rect>
-       <x>110</x>
-       <y>40</y>
-       <width>113</width>
-       <height>22</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_4">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>90</y>
-       <width>231</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Number of times to send random data: </string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="selectFileBtn">
-     <property name="geometry">
-      <rect>
-       <x>140</x>
-       <y>120</y>
-       <width>121</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Select File to send</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_5">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>130</y>
-       <width>131</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Or, pick file to send:</string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="clientStartBtn">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>180</y>
-       <width>131</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Connect and Send</string>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_6">
-     <property name="geometry">
-      <rect>
-       <x>270</x>
-       <y>120</y>
-       <width>201</width>
-       <height>21</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>No file selected</string>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QGroupBox" name="serverBox">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>300</y>
-      <width>481</width>
-      <height>121</height>
-     </rect>
-    </property>
-    <property name="title">
-     <string>Receive as Server</string>
-    </property>
-    <widget class="QLineEdit" name="lineEdit_3">
-     <property name="geometry">
-      <rect>
-       <x>110</x>
-       <y>40</y>
-       <width>113</width>
-       <height>22</height>
-      </rect>
-     </property>
-    </widget>
-    <widget class="QLabel" name="label_7">
-     <property name="geometry">
-      <rect>
-       <x>20</x>
-       <y>40</y>
-       <width>81</width>
-       <height>16</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Packet Size: </string>
-     </property>
-    </widget>
-    <widget class="QPushButton" name="serverStartBtn">
-     <property name="geometry">
-      <rect>
-       <x>10</x>
-       <y>80</y>
-       <width>151</width>
-       <height>31</height>
-      </rect>
-     </property>
-     <property name="text">
-      <string>Connect and Receive</string>
-     </property>
-    </widget>
-   </widget>
-   <widget class="QPlainTextEdit" name="status_text_edit">
-    <property name="geometry">
-     <rect>
-      <x>520</x>
-      <y>60</y>
-      <width>341</width>
-      <height>361</height>
-     </rect>
-    </property>
-    <property name="readOnly">
-     <bool>true</bool>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_8">
-    <property name="geometry">
-     <rect>
-      <x>520</x>
-      <y>30</y>
-      <width>56</width>
-      <height>16</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>Status:</string>
-    </property>
-   </widget>
-   <zorder>clientBox</zorder>
-   <zorder>label</zorder>
-   <zorder>udpRadioBtn</zorder>
-   <zorder>tcpRadioBtn</zorder>
-   <zorder>label_2</zorder>
-   <zorder>serverBox</zorder>
-   <zorder>status_text_edit</zorder>
-   <zorder>label_8</zorder>
+   <layout class="QGridLayout" name="gridLayout">
+    <item row="0" column="0" rowspan="2" colspan="2">
+     <layout class="QVBoxLayout" name="verticalLayout">
+      <item>
+       <widget class="QPlainTextEdit" name="main_text"/>
+      </item>
+     </layout>
+    </item>
+    <item row="1" column="1">
+     <widget class="QLabel" name="label">
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </item>
+   </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>882</width>
-     <height>22</height>
+     <width>739</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">
     <property name="title">
      <string>Menu</string>
     </property>
+    <addaction name="action_Start"/>
+    <addaction name="action_Connect_Settings"/>
     <addaction name="actionHelp"/>
-    <addaction name="action_Send_As_Client"/>
-    <addaction name="action_Receive_As_Server"/>
+    <addaction name="action_Stop"/>
    </widget>
    <addaction name="menuMenu"/>
   </widget>
@@ -306,14 +77,24 @@
     <string>Help</string>
    </property>
   </action>
-  <action name="action_Send_As_Client">
+  <action name="action_Start">
    <property name="text">
-    <string>&amp;Send As Client</string>
+    <string>&amp;Connect</string>
    </property>
   </action>
   <action name="action_Receive_As_Server">
    <property name="text">
     <string>&amp;Receive As Server</string>
+   </property>
+  </action>
+  <action name="action_Connect_Settings">
+   <property name="text">
+    <string>&amp;Settings</string>
+   </property>
+  </action>
+  <action name="action_Stop">
+   <property name="text">
+    <string>&amp;Stop</string>
    </property>
   </action>
  </widget>

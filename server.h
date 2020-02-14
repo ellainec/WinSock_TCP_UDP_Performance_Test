@@ -2,10 +2,10 @@
 #define SERVER_H
 #include "Definitions.h"
 #include <QPlainTextEdit>
+#include <QObject>
 
-class Server
-{
-private:
+class Server: public QObject  {
+    Q_OBJECT
 
 protected:
     WSADATA wsaData;
@@ -21,12 +21,14 @@ protected:
     bool createThread();
     bool setUp();
     static void printToFile(std::string);
+    CONNECT_INFORMATION* info;
 public:
-    Server() {};
+    Server(CONNECT_INFORMATION* info) : info(info) {};
     virtual ~Server() {
     };
     virtual bool start() = 0;
-
+signals:
+    void printToScreen(QString text);
 };
 
 #endif // SERVER_H
