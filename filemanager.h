@@ -9,7 +9,7 @@ public:
     FileManager();
     static void clearFile() {
         std::ofstream writeFile;
-        writeFile.open("D:/CST/4985/Assignment2/Assignment2/WriteTo.txt", std::ofstream::out | std::ofstream::trunc);
+        writeFile.open("\WriteTo.txt", std::ofstream::out | std::ofstream::trunc);
         writeFile.close();
     }
     static void printToFile(std::string str);

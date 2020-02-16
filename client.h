@@ -17,7 +17,8 @@ public:
     void start();
     WSADATA wsaData;
     char *writeBuffer;
-
+    SYSTEMTIME stStartTime;
+    SYSTEMTIME stEndTime;
     static void CALLBACK ClientWorkerRoutine(DWORD Error, DWORD BytesTransferred,
        LPWSAOVERLAPPED Overlapped, DWORD InFlags);
 

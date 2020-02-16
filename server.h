@@ -22,13 +22,20 @@ protected:
     bool setUp();
     static void printToFile(std::string);
     CONNECT_INFORMATION* info;
+    SYSTEMTIME stStartTime;
+    SYSTEMTIME stEndTime;
+    bool serverStopped;
 public:
-    Server(CONNECT_INFORMATION* info) : info(info) {};
+    Server(CONNECT_INFORMATION* info) : info(info), serverStopped(false) {};
     virtual ~Server() {
     };
     virtual bool start() = 0;
+    long delay (SYSTEMTIME t1, SYSTEMTIME t2);
+    void stopServer() {
+        serverStopped = true;
+    };
 signals:
-    virtual void printToScreen(QString);
+    void printToScreen(QString);
 };
 
 #endif // SERVER_H

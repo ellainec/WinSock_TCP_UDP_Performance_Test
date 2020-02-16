@@ -3,14 +3,11 @@
 
 
 bool Server::wsaStartup() {
-    qDebug() << "starting...";
-    if ((Ret = WSAStartup(0x0202,&wsaData)) != 0)
-      {
-        qDebug() << "WSAStartup failed" << Ret;
-         printf("WSAStartup failed with error %d\n", Ret);
-         WSACleanup();
-         return false;
-      }
+    if ((Ret = WSAStartup(0x0202,&wsaData)) != 0) {
+        emit printToScreen("WSAStartup failed: " + QString::number(Ret));
+        WSACleanup();
+        return false;
+    }
     return true;
 }
 
@@ -20,11 +17,9 @@ bool Server::bindSocket() {
     InternetAddr.sin_port = htons(info->port);
 
     if (bind(ListenSocket, (PSOCKADDR) &InternetAddr,
-       sizeof(InternetAddr)) == SOCKET_ERROR)
-    {
-       qDebug() << "bind failed, " << WSAGetLastError();
-       printf("bind() failed with error %d\n", WSAGetLastError());
-       return false;
+       sizeof(InternetAddr)) == SOCKET_ERROR) {
+        emit printToScreen("bind() failed with error " + QString::number(WSAGetLastError()));
+        return false;
     }
     return true;
 }
@@ -35,4 +30,3 @@ bool Server::setUp() {
     bool bound = bindSocket();
     return startup && socket && bound;
 }
-

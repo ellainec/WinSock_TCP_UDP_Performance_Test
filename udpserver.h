@@ -14,6 +14,8 @@ public:
     static void CALLBACK UDPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
        LPWSAOVERLAPPED Overlapped, DWORD InFlags);
     static DWORD WINAPI UDPWorkerThread(LPVOID lpParameter);
+    SYSTEMTIME firstPacketTime;
+    SYSTEMTIME lastPacketTime;
 };
 
 #endif // UDPSERVER_H

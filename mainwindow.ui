@@ -37,7 +37,7 @@
      <x>0</x>
      <y>0</y>
      <width>739</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuMenu">
@@ -47,7 +47,7 @@
     <addaction name="action_Start"/>
     <addaction name="action_Connect_Settings"/>
     <addaction name="actionHelp"/>
-    <addaction name="action_Stop"/>
+    <addaction name="action_On_Stop"/>
    </widget>
    <addaction name="menuMenu"/>
   </widget>
@@ -93,6 +93,11 @@
    </property>
   </action>
   <action name="action_Stop">
+   <property name="text">
+    <string>&amp;Stop</string>
+   </property>
+  </action>
+  <action name="action_On_Stop">
    <property name="text">
     <string>&amp;Stop</string>
    </property>

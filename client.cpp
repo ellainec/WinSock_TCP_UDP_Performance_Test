@@ -1,7 +1,6 @@
 #include "client.h"
 
 void Client::start() {
-    emit printToScreen("client started");
        SOCKET writeSocket;
        SOCKADDR_IN server;
        INT Ret;
@@ -42,14 +41,14 @@ void Client::start() {
                return;
            }
        }
-
+       memset((char*)&server, 0, sizeof(struct sockaddr_in));
        server.sin_family = AF_INET;
        server.sin_addr.s_addr = htonl(INADDR_ANY);
        server.sin_port = htons(info->port);
        memcpy((char*)& server.sin_addr, hp->h_addr, hp->h_length);
 
        if (WSAConnect(writeSocket,(struct sockaddr*) &server, sizeof(server), NULL, NULL, NULL, NULL) == -1) {
-           emit printToScreen("Can't connect to server");
+           emit printToScreen("Can't connect to server " + WSAGetLastError());
            return;
        };
 
@@ -61,19 +60,9 @@ void Client::start() {
 
        WSAEVENT EventArray[1];
        int times = 0;
+       emit printToScreen("Connected. Sending...");
+       GetSystemTime(&stStartTime);
        while(times < info->timesToSend) {
-//           if (WSASend(writeSocket, &DataBuf, 1, &SendBytes, 0,
-//                         (WSAOVERLAPPED*)SocketInfo, 0) == SOCKET_ERROR)
-//                     {
-//                         if (WSAGetLastError() != WSA_IO_PENDING)
-//                         {
-//                             printf("WSASend() failed with error %d\n", WSAGetLastError());
-//                             return;
-//                         }
-//                     }
-//           times++;
-//           emit printToScreen("Sent packet " + QString::number(times) + ": " + SocketInfo->BytesSEND);
-           //           times++;
            if (WSASend(writeSocket, &DataBuf, 1, &SendBytes, 0,
                (WSAOVERLAPPED*)SocketInfo, ClientWorkerRoutine) == SOCKET_ERROR)
            {
@@ -83,16 +72,17 @@ void Client::start() {
                    return;
                }
            }
-;           emit printToScreen("Sent packet " + QString::number(times) + ": " + SocketInfo->BytesSEND);
            times++;
 
            //place thread in alertable state
            SleepEx(INFINITE, TRUE);
        }
-
+       GetSystemTime(&stEndTime);
+       long totalTime = calculateTimeDelay(stStartTime, stEndTime);
+       emit printToScreen(QString::number(info->packetSize) + "B packets sent " + QString::number(times) + " times.");
+       emit printToScreen("Took a total of: " + QString::number(calculateTimeDelay(stStartTime, stEndTime)) + " ms");
        delete SocketInfo;
        closesocket(writeSocket);
-       emit printToScreen("Socket closed.");
 }
 
 

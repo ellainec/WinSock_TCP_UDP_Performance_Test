@@ -10,8 +10,7 @@ class TCPServer : public Server
 {
         Q_OBJECT
 private:
-    bool createSocket() override;
-    bool start() override;
+
     LPACCEPT_INFORMATION AcceptInfo;
 public:
     TCPServer(CONNECT_INFORMATION *info) : Server(info){};
@@ -19,7 +18,10 @@ public:
     static void CALLBACK TCPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
        LPWSAOVERLAPPED Overlapped, DWORD InFlags);
     static DWORD WINAPI TCPWorkerThread(LPVOID lpParameter);
+    bool createSocket() override;
+    bool start() override;
 signals:
-    void printToScreen(QString text);
+
+    //void tcpPrint(QString text);
 };
 #endif // TCPSERVER_H

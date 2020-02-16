@@ -9,34 +9,38 @@ bool TCPServer::createSocket() {
        printf("Failed to get a socket %d\n", WSAGetLastError());
        return false;
     }
+    const char *optval = new char[100];
+    if (setsockopt(ListenSocket,SOL_SOCKET, SO_REUSEADDR, optval, sizeof(optval)) < 0) {
+        qDebug() << "set sock opt failed" ;
+    };
     return true;
 }
 
 bool TCPServer::start() {
-    emit printToScreen("Server starting...");
     WSAEVENT EventArray[MAXIMUM_WAIT_OBJECTS];
     DWORD Flags, RecvBytes, Index;
     char buffer[MAX_LEN];
     LPSOCKET_INFORMATION SocketInfo;
 
     if (setUp() == false) {
-        emit printToScreen("Setup failed");
         return false;
     }
+
     AcceptInfo = new ACCEPT_INFORMATION;
     AcceptInfo->stopped = false;
     if(listen(ListenSocket, 5)){
-        emit printToScreen("listen() failed with error %d\n" + WSAGetLastError());
+        // emit tcpPrint("listen() failed with error %d\n" + WSAGetLastError());
          return false;
     }
 
-
     if ((AcceptInfo->AcceptEvent = WSACreateEvent()) == WSA_INVALID_EVENT)
     {
-        emit printToScreen("WSACreateEvent() failed with error %d\n" + WSAGetLastError());
+        // emit tcpPrint("WSACreateEvent() failed with error %d\n" + WSAGetLastError());
        return false;
     }
+    emit printToScreen("Connected and ready to accept incoming connection...");
     AcceptInfo->AcceptSocket = accept(ListenSocket, NULL, NULL);
+    //start timer
     Flags = 0;
 
     //ZeroMemory(&Overlapped, sizeof(WSAOVERLAPPED));
@@ -46,11 +50,13 @@ bool TCPServer::start() {
     ZeroMemory(&(SocketInfo->Overlapped), sizeof(WSAOVERLAPPED));
     SocketInfo->BytesSEND = 0;
     SocketInfo->BytesRECV = 0;
-    SocketInfo->DataBuf.len = MAX_LEN;
+    SocketInfo->DataBuf.len = info->packetSize;
     SocketInfo->DataBuf.buf = SocketInfo->Buffer;
-    SocketInfo->stopped = false;
+    memset(SocketInfo->Buffer, 0, sizeof(SocketInfo->Buffer));
 
     FileManager::clearFile();
+    GetSystemTime(&stStartTime);
+    emit printToScreen("Reading...");
     if (WSARecv(AcceptInfo->AcceptSocket, &SocketInfo->DataBuf, 1, &RecvBytes, &Flags,
         &SocketInfo->Overlapped, TCPWorkerRoutine) == SOCKET_ERROR) {
         if (WSAGetLastError() != WSA_IO_PENDING) {
@@ -66,9 +72,12 @@ bool TCPServer::start() {
     }
     bool keepGoing = true;
     Index = 0;
-    while(SocketInfo->stopped == false) {
-        SleepEx(INFINITE, TRUE);
+    while(!serverStopped) {
+        SleepEx(1000, TRUE);
     }
+    GetSystemTime(&stEndTime);
+    long totalTime = calculateTimeDelay(stStartTime, stEndTime);
+    emit printToScreen("Total of " + QString::number(SocketInfo->BytesRECV) + "B received. Total time: " + QString::number(totalTime) + " ms");
     closesocket(AcceptInfo->AcceptSocket);
     closesocket(ListenSocket);
     delete AcceptInfo;
@@ -102,7 +111,6 @@ bool TCPServer::start() {
 
       if (Error != 0 || BytesTransferred == 0)
       {
-          SI->stopped = true;
          qDebug() << "error: " << Error;
          return;
       }

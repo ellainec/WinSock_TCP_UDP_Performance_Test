@@ -7,7 +7,7 @@ FileManager::FileManager()
 
 void FileManager::printToFile(std::string str){
     std::ofstream writeFile;
-    writeFile.open("D:/CST/4985/Assignment2/Assignment2/WriteTo.txt", std::ios_base::app);
+    writeFile.open("\WriteTo.txt", std::ios_base::app);
     if(!writeFile.is_open()) {
         qDebug() << "open file failed";
     }
@@ -17,7 +17,7 @@ void FileManager::printToFile(std::string str){
 
 void FileManager::readFromFile(char* buffer, int beg, int length) {
     std::ifstream readFile;
-    readFile.open("D:/CST/4985/Assignment2/Assignment2/ReadFrom.txt", std::ifstream::binary);
+    readFile.open("/ReadFrom.txt", std::ifstream::binary);
     if(readFile.is_open()) {
         readFile.seekg(beg);
         readFile.read(buffer, length);

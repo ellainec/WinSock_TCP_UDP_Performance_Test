@@ -30,7 +30,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     connect(ui->action_Connect_Settings, &QAction::triggered, connectDialog, &ConnectDialog::show);
     connect(ui->action_Start, &QAction::triggered, this, &MainWindow::start);
-    connect(ui->action_Stop, &QAction::triggered, this, &MainWindow::stop);
 }
 
 void MainWindow::stop() {
@@ -38,20 +37,16 @@ void MainWindow::stop() {
 }
 
 DWORD WINAPI MainWindow::ServerThread(LPVOID lpParameter) {
-    Server* server;
-    CONNECT_INFORMATION* info = (CONNECT_INFORMATION*) lpParameter;
-    if(info->protocolSelected == protocol::TCP) {
-        server = new TCPServer(info);
-    } else {
-        server = new UDPServer(info);
-    }
+    Server* server = (Server*) lpParameter;
     server->start();
+    qDebug() << "server finished";
     return true;
 }
 
 DWORD WINAPI MainWindow::ClientThread(LPVOID lpParameter) {
     Client *client = (Client *) lpParameter;
     client->start();
+    qDebug() << "client finished";
     return true;
 }
 
@@ -75,13 +70,14 @@ void MainWindow::start() {
         if(server == nullptr) {
             if(connectDialog->info.protocolSelected == protocol::TCP) {
                 server = new TCPServer(&connectDialog->info);
-                connect((TCPServer*)server, &TCPServer::printToScreen, this, &MainWindow::print);
             } else {
                 server = new UDPServer(&connectDialog->info);
             }
+            connect(server, &Server::printToScreen, this, &MainWindow::print);
+            connect(ui->action_On_Stop, &QAction::triggered, server, &Server::stopServer);
         }
 
-        if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, (LPVOID)&connectDialog->info, 0, &ThreadId)) == NULL)
+        if ((ThreadHandle = CreateThread(NULL, 0, ServerThread, (LPVOID)server, 0, &ThreadId)) == NULL)
         {
             printf("CreateThread failed with error %d\n", GetLastError());
             return;
@@ -91,11 +87,11 @@ void MainWindow::start() {
 
 bool MainWindow::validateSettings() {
     //todo: remove later
-//    connectDialog->info.port = 9898;
+//    connectDialog->info.port = 5150;
 //    sprintf(connectDialog->info.ipAddress, "127.0.0.1");
-//    connectDialog->info.packetSize = 60000;
-//    connectDialog->info.timesToSend = 100;
-//    connectDialog->info.protocolSelected = protocol::UDP;
+//    connectDialog->info.packetSize = 1024;
+//    connectDialog->info.timesToSend = 10;
+//    connectDialog->info.protocolSelected = protocol::TCP;
 
     if (connectDialog->info.roleSelected != role::CLIENT && connectDialog->info.roleSelected != role::SERVER) {
         return false;
@@ -123,6 +119,8 @@ void MainWindow::print(QString text) {
 
 MainWindow::~MainWindow()
 {
+    delete server;
+    delete client;
     delete ui;
 }
 

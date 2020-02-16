@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "filemanager.h"
 #define PORT 5150
-#define MAX_LEN 70240
+#define MAX_LEN 60100
 
 enum protocol {TCP, UDP};
 enum role {CLIENT, SERVER};
@@ -20,7 +20,8 @@ typedef struct _SOCKET_INFORMATION {
    DWORD BytesSEND;
    DWORD BytesRECV;
    DWORD Error;
-   bool stopped;
+   SYSTEMTIME firstPacketTime;
+   SYSTEMTIME lastPacketTime;
 } SOCKET_INFORMATION, * LPSOCKET_INFORMATION;
 
 typedef struct _ACCEPT_INFORMATION {
@@ -38,4 +39,12 @@ typedef struct _CONNECT_INFORMATION {
     int timesToSend;
 } CONNECT_INFORMATION, * LPCONNECT_INFORMATION;
 
+static long calculateTimeDelay (SYSTEMTIME t1, SYSTEMTIME t2)
+{
+    long d;
+
+    d = (t2.wSecond - t1.wSecond) * 1000;
+    d += (t2.wMilliseconds - t1.wMilliseconds);
+    return(d);
+}
 #endif // DEFINITIONS_H
