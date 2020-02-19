@@ -33,6 +33,7 @@ public:
     long delay (SYSTEMTIME t1, SYSTEMTIME t2);
     void stopServer() {
         serverStopped = true;
+        emit printToScreen("Server stopped");
     };
 signals:
     void printToScreen(QString);

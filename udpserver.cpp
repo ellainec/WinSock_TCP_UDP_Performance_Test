@@ -1,6 +1,46 @@
 #include "udpserver.h"
 
-//override for protocol
+/*--------------------------------------------------------------------------------
+-- SOURCE FILE:       UDPServer.cpp
+--
+-- PROGRAM:           UDPServer
+--
+-- FUNCTIONS:         bool createSocket()
+                      bool start()
+                      void UDPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
+      LPWSAOVERLAPPED Overlapped, DWORD InFlags)
+--
+-- DATE:              February 16, 2020
+--
+--
+-- DESIGNER:          Ellaine Chan
+--
+-- PROGRAMMER:        Ellaine Chan
+--
+-- NOTES:
+-- UDPServer inherits from the base Server class to implement a UDPServer.
+-- It opens up a streaming socket and starts receiving using completion I/O.
+-------------------------------------------------------------------------------- */
+
+/*--------------------------------------------------------------------------------
+-- FUNCTION: bool createSocket()
+--
+-- DATE:    February 16, 2020
+--
+-- DESIGNER: Ellaine Chan
+--
+-- PROGRAMMER: Ellaine Chan
+--
+-- PARAMETERS: void
+--
+-- RETURNS: true if successful, else false
+--
+-- NOTES:
+-- Creates a socket with datagram option for UDP protocol. Sets socket option
+-- to enable address reuse to prevent address in use errors. The receive buffer is
+-- also set to be able to hold the maximum total data size of what this application
+-- can expect.
+-------------------------------------------------------------------------------- */
 bool UDPServer::createSocket() {
     if ((ListenSocket = WSASocket(AF_INET, SOCK_DGRAM, IPPROTO_UDP, NULL, 0,
        WSA_FLAG_OVERLAPPED)) == INVALID_SOCKET) {
@@ -19,6 +59,24 @@ bool UDPServer::createSocket() {
     return true;
 }
 
+/*--------------------------------------------------------------------------------
+-- FUNCTION: bool start()
+--
+-- DATE:    February 16, 2020
+--
+-- DESIGNER: Ellaine Chan
+--
+-- PROGRAMMER: Ellaine Chan
+--
+-- PARAMETERS: void
+--
+-- RETURNS: true if successful, else false
+--
+-- NOTES:
+-- Calls setUp that will start WSA, create socket, and bind the socket to the port.
+-- Calls WSARecv to start receiving.
+-- Once the packet is received, the completion callback will be called.
+-------------------------------------------------------------------------------- */
 bool UDPServer::start() {
     if (setUp() == false) {
         return false;
@@ -63,7 +121,28 @@ bool UDPServer::start() {
     delete SocketInfo;
 }
 
-   void UDPServer::UDPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
+/*--------------------------------------------------------------------------------
+-- FUNCTION: void UDPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
+      LPWSAOVERLAPPED Overlapped, DWORD InFlags)
+--
+-- DATE:    February 16, 2020
+--
+-- DESIGNER: Ellaine Chan
+--
+-- PROGRAMMER: Ellaine Chan
+--
+-- PARAMETERS: DWORD Error, DWORD BytesTransferred,
+      LPWSAOVERLAPPED Overlapped, DWORD InFlags
+--
+-- RETURNS: void
+--
+-- NOTES:
+-- Function called when a WSARecv reads a packet. Increments the total of bytes
+-- received and calls WSARecv again to receive the next packet. If there is an error,
+-- or BytesTransferred is 0 meaning client has nothing more to send, it doesn't call
+-- WSARecv.
+-------------------------------------------------------------------------------- */
+void UDPServer::UDPWorkerRoutine(DWORD Error, DWORD BytesTransferred,
       LPWSAOVERLAPPED Overlapped, DWORD InFlags)
    {
       DWORD SendBytes, RecvBytes;
@@ -72,23 +151,23 @@ bool UDPServer::start() {
 
       // Reference the WSAOVERLAPPED structure as a SOCKET_INFORMATION structure
       LPSOCKET_INFORMATION SI = (LPSOCKET_INFORMATION) Overlapped;
-//      if (SI->BytesRECV == 0) {
-//          GetSystemTime(&SI->firstPacketTime);
-//      } else {
-//          GetSystemTime(&SI->lastPacketTime);
-//      }
+      if (SI->BytesRECV == 0) {
+          GetSystemTime(&SI->firstPacketTime);
+      } else {
+          GetSystemTime(&SI->lastPacketTime);
+      }
       SI->BytesRECV += BytesTransferred;
-//      if (BytesTransferred > 0) {
-//          FileManager::printToFile(SI->Buffer);
-//      }
+      if (BytesTransferred > 0) {
+          FileManager::printToFile(SI->Buffer);
+      }
       memset(SI->Buffer, 0, sizeof(SI->Buffer));
 
-//      if (Error != 0 || BytesTransferred == 0)
-//      {
-//         closesocket(SI->Socket);
-//         GlobalFree(SI);
-//         return;
-//      }
+      if (Error != 0 || BytesTransferred == 0)
+      {
+         closesocket(SI->Socket);
+         GlobalFree(SI);
+         return;
+      }
       if (WSARecvFrom(SI->Socket, &(SI->DataBuf), 1, &RecvBytes, &Flags,
           NULL, NULL, &(SI->Overlapped), UDPWorkerRoutine) == SOCKET_ERROR) {
           if (WSAGetLastError() != WSA_IO_PENDING)

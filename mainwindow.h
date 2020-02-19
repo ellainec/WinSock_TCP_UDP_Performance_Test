@@ -44,6 +44,5 @@ private:
     Server *server = nullptr;
     Client *client = nullptr;
     bool validateSettings();
-    void stop();
 };
 #endif // MAINWINDOW_H

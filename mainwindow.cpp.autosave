@@ -11,7 +11,7 @@
                       void getServiceName(std::string portAndProtocol);
                       void print(QString text);
 --
--- DATE:              January 18, 2020
+-- DATE:              February 16, 2020
 --
 --
 -- DESIGNER:          Ellaine Chan

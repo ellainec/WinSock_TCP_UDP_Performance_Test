@@ -18,7 +18,6 @@ DEFINES += QT_DEPRECATED_WARNINGS
 SOURCES += \
     client.cpp \
     connectdialog.cpp \
-    filemanager.cpp \
     main.cpp \
     mainwindow.cpp \
     server.cpp \

@@ -1,5 +1,52 @@
 #include "client.h"
+/*------------------------------------------------------------------------------------------------------------------
+-- SOURCE FILE: client.cpp
+--
+-- PROGRAM: Client
+--
+-- FUNCTIONS:
+-- void start()
+-- void CALLBACK ClientWorkerRoutine(DWORD Error, DWORD BytesTransferred,
+--     LPWSAOVERLAPPED Overlapped, DWORD InFlags)
+--
+--
+-- DATE: February 16, 2020
+--
+-- DESIGNER: Ellaine Chan
+--
+-- PROGRAMMER: Ellaine Chan
+--
+-- NOTES:
+-- Client interfaces with Windows Socket API to create a TCP or UDP socket,
+-- connect and send data to host. The packet size and number of times client sends to host server is
+-- specified by the user. This class uses Completion I/O, with completion routine to track
+-- the number of bytes successfully sent. It also records how long, in ms, it takes to send all the
+-- desired packets.
+----------------------------------------------------------------------------------------------------------------------*/
 
+
+/*--------------------------------------------------------------------------------
+-- FUNCTION: start
+--
+-- DATE:    February 16, 2020
+--
+-- DESIGNER: Ellaine Chan
+--
+-- PROGRAMMER: Ellaine Chan
+--
+-- PARAMETERS: void
+--
+-- RETURNS: void
+--
+-- NOTES:
+-- Creates the socket and gets host by name. If it is a TCP socket it starts connection to
+-- server, if it is UDP it calls connect to set the server host address as default.
+-- Creates a buffer allocating it's size to the amount set by the user. The WSARecv
+-- method is looped to send the data stored in the buffer n amount of times, set by the user.
+-- System time is stored right before and after the send loop to calculate the total amount
+-- of time the data transfer took. The result, and total amount of bytes sent is printed
+-- out.
+-------------------------------------------------------------------------------- */
 void Client::start() {
        SOCKET writeSocket;
        SOCKADDR_IN server;
@@ -85,7 +132,26 @@ void Client::start() {
        closesocket(writeSocket);
 }
 
-
+/*--------------------------------------------------------------------------------
+-- FUNCTION: ClientWorkerRoutine
+--
+-- DATE:    February 16, 2020
+--
+-- DESIGNER: Ellaine Chan
+--
+-- PROGRAMMER: Ellaine Chan
+--
+-- PARAMETERS: void
+--
+-- RETURNS: void
+--
+-- NOTES:
+-- This method is the callback when WSARecv finishes reading. The pointer to
+-- the overlapped struct is cast to a pointer to SOCKET_INFORMATION which holds
+-- both the overlapped struct and BytesSEND which is used to keep track of how many
+-- bytes has been sent. If an error occurs or no bytes were transferred
+-- the socket is closed.
+-------------------------------------------------------------------------------- */
 void CALLBACK Client:: ClientWorkerRoutine(DWORD Error, DWORD BytesTransferred,
                             LPWSAOVERLAPPED Overlapped, DWORD InFlags) {
     LPSOCKET_INFORMATION SI = (LPSOCKET_INFORMATION)Overlapped;
